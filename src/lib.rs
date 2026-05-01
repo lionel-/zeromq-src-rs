@@ -446,7 +446,16 @@ impl Build {
 
             build.define("ZMQ_HAVE_WINDOWS", "1");
             build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
-            build.define("ZMQ_POLL_BASED_ON_POLL", "1");
+
+            // WSAPoll (ZMQ_POLL_BASED_ON_POLL) has a long history of bugs
+            // on Windows and is particularly unreliable on ARM64, where
+            // zmq_poll() with a non-zero timeout can block forever. Use
+            // select() on ARM64 instead.
+            if target.contains("aarch64") {
+                build.define("ZMQ_POLL_BASED_ON_SELECT", "1");
+            } else {
+                build.define("ZMQ_POLL_BASED_ON_POLL", "1");
+            }
             build.define("_WIN32_WINNT", "0x0600"); // vista
             build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
 
