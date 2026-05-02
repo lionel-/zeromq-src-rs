@@ -406,7 +406,7 @@ impl Build {
                 build.define("HAVE_STRNLEN", "1");
             }
 
-            if !target.contains("uwp") {
+            if !target.contains("uwp") && !target.contains("aarch64") {
                 build.define("ZMQ_HAVE_IPC", "1");
             }
         } else if target.contains("linux") {
