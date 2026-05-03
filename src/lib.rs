@@ -369,26 +369,17 @@ impl Build {
 
         let mut has_strlcpy = false;
         if target.contains("windows") {
-            // On ARM64, wepoll (epoll emulation via internal NT APIs) appears
-            // unreliable, causing the I/O thread to miss socket events and
-            // leaving zmq_poll() stuck. Use select for both the I/O thread
-            // and the zmq_poll API on ARM64, bypassing wepoll entirely.
+            // on windows vista and up we can use `epoll` through the `wepoll` lib
             add_c_sources(
                 &mut build,
                 vendor.join("external/wepoll"),
                 &["wepoll.c"],
             );
 
-            build.define("ZMQ_HAVE_WINDOWS", "1");
-
-            if target.contains("aarch64") {
-                build.define("ZMQ_IOTHREAD_POLLER_USE_SELECT", "1");
-                build.define("ZMQ_POLL_BASED_ON_SELECT", "1");
-            } else {
-                build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
-                build.define("ZMQ_POLL_BASED_ON_POLL", "1");
-            }
+            build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
+            build.define("ZMQ_POLL_BASED_ON_POLL", "1");
             build.define("_WIN32_WINNT", "0x0600"); // vista
+            build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
 
             println!("cargo:rustc-link-lib=iphlpapi");
 
@@ -398,15 +389,15 @@ impl Build {
                 // we get linkage error.
                 build.flag("/GL-");
 
-                // Fix warning C4530: "C++ exception handler used, but unwind
-                // semantics are not enabled. Specify /EHsc"
+                // Fix warning C4530: \"C++ exception handler used, but unwind
+                // semantics are not enabled. Specify /EHsc\"
                 build.flag("/EHsc");
             } else {
                 create_platform_hpp_shim(&mut build);
                 build.define("HAVE_STRNLEN", "1");
             }
 
-            if !target.contains("uwp") && !target.contains("aarch64") {
+            if !target.contains("uwp") {
                 build.define("ZMQ_HAVE_IPC", "1");
             }
         } else if target.contains("linux") {
