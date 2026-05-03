@@ -379,7 +379,6 @@ impl Build {
             build.define("ZMQ_IOTHREAD_POLLER_USE_EPOLL", "1");
             build.define("ZMQ_POLL_BASED_ON_POLL", "1");
             build.define("_WIN32_WINNT", "0x0600"); // vista
-            build.define("ZMQ_HAVE_STRUCT_SOCKADDR_UN", "1");
 
             println!("cargo:rustc-link-lib=iphlpapi");
 
@@ -389,8 +388,8 @@ impl Build {
                 // we get linkage error.
                 build.flag("/GL-");
 
-                // Fix warning C4530: \"C++ exception handler used, but unwind
-                // semantics are not enabled. Specify /EHsc\"
+                // Fix warning C4530: "C++ exception handler used, but unwind
+                // semantics are not enabled. Specify /EHsc"
                 build.flag("/EHsc");
             } else {
                 create_platform_hpp_shim(&mut build);

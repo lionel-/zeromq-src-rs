@@ -283,6 +283,12 @@ src_libzmq_la_SOURCES += \
 	external/wepoll/wepoll.h
 endif
 
+if USE_TWEETNACL
+src_libzmq_la_SOURCES += \
+	src/tweetnacl.c \
+	src/tweetnacl.h
+endif
+
 if HAVE_WS
 src_libzmq_la_SOURCES += \
 	src/ws_address.cpp \
@@ -466,8 +472,8 @@ test_apps = \
 	tests/test_unbind_wildcard \
 	tests/test_ctx_options \
 	tests/test_ctx_destroy \
-	tests/test_security_no_zap_handler \
-	tests/test_security_null \
+        tests/test_security_no_zap_handler \
+        tests/test_security_null \
 	tests/test_security_plain \
 	tests/test_security_zap \
 	tests/test_iov \
@@ -481,9 +487,9 @@ test_apps = \
 	tests/test_conflate \
 	tests/test_inproc_connect \
 	tests/test_issue_566 \
+	tests/test_proxy \
 	tests/test_proxy_hwm \
 	tests/test_proxy_single_socket \
-	tests/test_proxy_steerable \
 	tests/test_proxy_terminate \
 	tests/test_getsockopt_memset \
 	tests/test_setsockopt \
@@ -494,7 +500,6 @@ test_apps = \
 	tests/test_capabilities \
 	tests/test_xpub_nodrop \
 	tests/test_xpub_manual \
-	tests/test_xpub_topic \
 	tests/test_xpub_welcome_msg \
 	tests/test_xpub_verbose \
 	tests/test_atomics \
@@ -715,14 +720,9 @@ tests_test_issue_566_SOURCES = tests/test_issue_566.cpp
 tests_test_issue_566_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_issue_566_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 
-# TODO: gets stuck even with long timeout running under Github Actions
-if !VALGRIND_ENABLED
-test_apps += tests/test_proxy
-
 tests_test_proxy_SOURCES = tests/test_proxy.cpp
 tests_test_proxy_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_proxy_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-endif
 
 tests_test_proxy_hwm_SOURCES = tests/test_proxy_hwm.cpp
 tests_test_proxy_hwm_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
@@ -731,10 +731,6 @@ tests_test_proxy_hwm_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_proxy_single_socket_SOURCES = tests/test_proxy_single_socket.cpp
 tests_test_proxy_single_socket_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_proxy_single_socket_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_proxy_steerable_SOURCES = tests/test_proxy_steerable.cpp
-tests_test_proxy_steerable_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_proxy_steerable_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 
 tests_test_proxy_terminate_SOURCES = tests/test_proxy_terminate.cpp
 tests_test_proxy_terminate_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
@@ -771,10 +767,6 @@ tests_test_xpub_nodrop_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_xpub_manual_SOURCES = tests/test_xpub_manual.cpp
 tests_test_xpub_manual_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_xpub_manual_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_xpub_topic_SOURCES = tests/test_xpub_topic.cpp
-tests_test_xpub_topic_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_xpub_topic_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 
 tests_test_xpub_welcome_msg_SOURCES = tests/test_xpub_welcome_msg.cpp
 tests_test_xpub_welcome_msg_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
@@ -850,6 +842,11 @@ tests_test_security_curve_SOURCES = \
 	src/random.cpp \
 	src/err.hpp \
 	src/err.cpp
+
+if USE_TWEETNACL
+tests_test_security_curve_SOURCES += \
+	src/tweetnacl.c
+endif
 
 tests_test_security_curve_LDADD = \
         ${TESTUTIL_LIBS} src/libzmq.la $(LIBUNWIND_LIBS) $(LIBBSD_LIBS)
@@ -1004,20 +1001,16 @@ tests_test_security_gssapi_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 endif
 
 if ON_LINUX
-test_apps += tests/test_abstract_ipc
+test_apps += tests/test_abstract_ipc \
+	tests/test_socks
 
 tests_test_abstract_ipc_SOURCES = tests/test_abstract_ipc.cpp
 tests_test_abstract_ipc_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_abstract_ipc_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 
-# TODO: gets stuck even with long timeout running under Github Actions
-if !VALGRIND_ENABLED
-test_apps += tests/test_socks
-
 tests_test_socks_SOURCES = tests/test_socks.cpp
 tests_test_socks_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_socks_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-endif
 
 # TODO: enable when https://github.com/zeromq/libzmq/issues/3898 is fixed
 if !ENABLE_ASAN
@@ -1031,19 +1024,19 @@ endif
 endif
 
 if HAVE_VMCI
-test_apps += tests/test_pair_vmci tests/test_reqrep_vmci
+test_apps += test_pair_vmci test_reqrep_vmci
 
-tests_test_pair_vmci_SOURCES = tests/test_pair_vmci.cpp
-tests_test_pair_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_pair_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-tests_test_pair_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
-tests_test_pair_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
+test_pair_vmci_SOURCES = tests/test_pair_vmci.cpp
+test_pair_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+test_pair_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+test_pair_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
+test_pair_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
 
-tests_test_reqrep_vmci_SOURCES = tests/test_reqrep_vmci.cpp
-tests_test_reqrep_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_reqrep_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-tests_test_reqrep_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
-tests_test_reqrep_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
+test_reqrep_vmci_SOURCES = tests/test_reqrep_vmci.cpp
+test_reqrep_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+test_reqrep_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+test_reqrep_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
+test_reqrep_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
 
 endif
 
@@ -1063,11 +1056,7 @@ test_apps += tests/test_poller \
 	tests/test_msg_init \
 	tests/test_hello_msg \
 	tests/test_disconnect_msg \
-	tests/test_channel \
-	tests/test_hiccup_msg \
-	tests/test_zmq_ppoll_fd \
-	tests/test_xsub_verbose \
-	tests/test_pubsub_topics_count
+	tests/test_channel
 
 tests_test_poller_SOURCES = tests/test_poller.cpp
 tests_test_poller_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
@@ -1132,30 +1121,6 @@ tests_test_disconnect_msg_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_channel_SOURCES = tests/test_channel.cpp
 tests_test_channel_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_channel_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_hiccup_msg_SOURCES = tests/test_hiccup_msg.cpp
-tests_test_hiccup_msg_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_hiccup_msg_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_zmq_ppoll_fd_SOURCES = tests/test_zmq_ppoll_fd.cpp
-tests_test_zmq_ppoll_fd_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_zmq_ppoll_fd_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_xsub_verbose_SOURCES = tests/test_xsub_verbose.cpp
-tests_test_xsub_verbose_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_xsub_verbose_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-tests_test_pubsub_topics_count_SOURCES = tests/test_pubsub_topics_count.cpp
-tests_test_pubsub_topics_count_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_pubsub_topics_count_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-
-if HAVE_FORK
-test_apps += tests/test_zmq_ppoll_signals
-
-tests_test_zmq_ppoll_signals_SOURCES = tests/test_zmq_ppoll_signals.cpp
-tests_test_zmq_ppoll_signals_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
-tests_test_zmq_ppoll_signals_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-endif
 endif
 
 if FUZZING_ENGINE_LIB
@@ -1449,7 +1414,6 @@ EXTRA_DIST = \
 	autogen.sh	\
 	version.sh	\
 	ci_build.sh \
-	LICENSE \
 	src/libzmq.vers \
 	src/version.rc.in \
 	tests/CMakeLists.txt \

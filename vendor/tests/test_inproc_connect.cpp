@@ -1,4 +1,31 @@
-/* SPDX-License-Identifier: MPL-2.0 */
+/*
+    Copyright (c) 2007-2016 Contributors as noted in the AUTHORS file
+
+    This file is part of libzmq, the ZeroMQ core engine in C++.
+
+    libzmq is free software; you can redistribute it and/or modify it under
+    the terms of the GNU Lesser General Public License (LGPL) as published
+    by the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
+
+    As a special exception, the Contributors give you permission to link
+    this library with independent modules to produce an executable,
+    regardless of the license terms of these independent modules, and to
+    copy and distribute the resulting executable under terms of your choice,
+    provided that you also meet, for each linked independent module, the
+    terms and conditions of the license of that module. An independent
+    module is a module which is not derived from or based on this library.
+    If you modify this library, you must extend this exception to your
+    version of the library.
+
+    libzmq is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+    License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "testutil.hpp"
 #include "testutil_unity.hpp"
@@ -27,9 +54,8 @@ static void simult_conn (void *endpt_)
 
     // Connect
     // do not use test_context_socket here, as it is not thread-safe
-    void *connect_socket = zmq_socket (get_test_context (), ZMQ_PAIR);
+    void *connect_socket = zmq_socket (get_test_context (), ZMQ_SUB);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (connect_socket, endpt));
-    recv_string_expect_success (connect_socket, "foobar", 0);
 
     // Cleanup
     TEST_ASSERT_SUCCESS_ERRNO (zmq_close (connect_socket));
@@ -42,9 +68,8 @@ static void simult_bind (void *endpt_)
 
     // Bind
     // do not use test_context_socket here, as it is not thread-safe
-    void *bind_socket = zmq_socket (get_test_context (), ZMQ_PAIR);
+    void *bind_socket = zmq_socket (get_test_context (), ZMQ_PUB);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (bind_socket, endpt));
-    send_string_expect_success (bind_socket, "foobar", 0);
 
     // Cleanup
     TEST_ASSERT_SUCCESS_ERRNO (zmq_close (bind_socket));
@@ -128,7 +153,7 @@ void test_connect_before_bind_ctx_term ()
         void *connect_socket = test_context_socket (ZMQ_ROUTER);
 
         char ep[32];
-        snprintf (ep, 32 * sizeof (char), "inproc://cbbrr%d", i);
+        sprintf (ep, "inproc://cbbrr%d", i);
         TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (connect_socket, ep));
 
         // Cleanup
@@ -206,7 +231,7 @@ void test_simultaneous_connect_bind_threads ()
     // Set up thread arguments: context followed by endpoint string
     for (unsigned int i = 0; i < no_of_times; ++i) {
         thr_args[i] = (void *) endpts[i];
-        snprintf (endpts[i], 20 * sizeof (char), "inproc://foo_%d", i);
+        sprintf (endpts[i], "inproc://foo_%d", i);
     }
 
     // Spawn all threads as simultaneously as possible

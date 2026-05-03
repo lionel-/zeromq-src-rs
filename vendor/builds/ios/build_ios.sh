@@ -84,9 +84,7 @@ do
 	--prefix=${BUILDARCHDIR} \
 	--disable-shared \
 	--enable-static \
-	--host=${HOST} \
-	--disable-perf \
-	--disable-curve-keygen
+	--host=${HOST}
 
     echo "Building ${LIBNAME} for ${ARCH}..."
     cd ${LIBDIR}
